@@ -55,7 +55,7 @@ if (isset($_POST['login']))
         session_start();
         $_SESSION['id']=$fetch['id'];
         $_SESSION['username']=$fetch['username'];
-        header('location:message.php');
+        header('Location:message.php');
     }
     else
     {
