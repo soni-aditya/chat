@@ -2,12 +2,13 @@
 /**
  * Created by PhpStorm.
  * User: root
+ *
  * Date: 13/9/17
  * Time: 12:57 AM
  *
  * Login page
  */
-require_once ('connect.php');
+require_once ('db.php');
 ?>
 <html>
 <head>
@@ -43,23 +44,22 @@ require_once ('connect.php');
 <?php
 if (isset($_POST['login']))
 {
-    $username=trim(mysqli_real_escape_string($con,$_POST['username']));
-    $password=trim(mysqli_real_escape_string($con,$_POST['password']));
-    $md5password=md5($password);
+    $username=trim(mysqli_real_escape_string(db::connect(),$_POST['username']));
+    $password=trim(mysqli_real_escape_string(db::connect(),$_POST['password']));
 
-    ///Check the username and password match from the DB
-    $query=mysqli_query($con,"SELECT * FROM user WHERE username='.$username.' AND password='.$md5password.'");
-    if(mysqli_num_rows($query) == 1)
+    $query="SELECT * FROM user WHERE username='$username' AND password='$password'";
+    $data=db::get_data($query);
+    if($data != 0)
     {
-        $fetch=mysqli_fetch_assoc($query);
+        $details=$data->fetch_assoc();
         session_start();
-        $_SESSION['id']=$fetch['id'];
-        $_SESSION['username']=$fetch['username'];
-        header('Location:message.php');
+        $_SESSION['id']=$details['id'];
+        $_SESSION['username']=$details['username'];
+//        var_dump($_SESSION);
+        header('location:message.php');
     }
     else
     {
-        //show error message
         echo "<div class='alert alert-danger'>Invalid username Or password.</div>";
     }
 }

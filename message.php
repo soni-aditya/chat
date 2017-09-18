@@ -5,14 +5,16 @@
  * Date: 13/9/17
  * Time: 1:20 AM
  */
-    require_once ('connect.php');
+    require_once ('db.php');
+    session_start();
+
     if(isset($_SESSION['id']))
     {
         $user_id=$_SESSION['id'];
     }
     else
     {
-        header('Location:index.php');
+        header('location:index.php');
     }
 ?>
 <html>
@@ -31,11 +33,12 @@
             <ul>
                 <?php
                 //show all the users except me
-                $q=mysqli_query("SELECT * FROM user WHERE id!=$user_id");
+                $q="SELECT * FROM user WHERE id!=$user_id";
+                $data=db::get_data($q);
                 //display all the results
-                while($row=mysqli_fetch_assoc($q))
+                while($row=$data->fetch_assoc())
                 {
-                    echo "<a href='message.php?id={$row[id]}'><li><img src='$row[img]'> {$row['username']}</li></a>";
+                    echo "<a href='message.php?id={$row['id']}'><li><img src='{$row['img']}'> {$row['username']}</li></a>";
                 }
                 ?>
             </ul>
@@ -47,30 +50,35 @@
                     //check if $_GET['id'] is set
                     if(isset($_GET['id']))
                     {
-                        $user_two=trim(mysqli_real_escape_string($con,$_GET['id']));
+                        $user_two=trim(mysqli_real_escape_string(db::connect(),$_GET['id']));
                         //check if user_two id is valid
-                        $q=mysqli_query($con,"SELECT `id` FROM `user` WHERE id='$user_two' AND id!='$user_id'");
+                        $q="SELECT `id` FROM `user` WHERE id=$user_two AND id!=$user_id";
+                        $result=db::get_data($q);
                         //valid user_two
-                        if(mysqli_num_rows($q)==1)
+                        if($result != 0)
                         {
-                            //check if there exist some previous conversations btw user1 and user2
-                            //check $user_id and $user_two has conversation or not if no start one
-                            $conver = mysqli_query($con, "SELECT * FROM `conversation` WHERE (user_one='$user_id' AND user_two='$user_two') OR (user_one='$user_two' AND user_two='$user_id')");
+                            $conver = "SELECT * FROM `conversation` WHERE (user_one=$user_id AND user_two=$user_two) OR (user_one=$user_two AND user_two=$user_id)";
 
-                            //they have a conversation
-                            if(mysqli_num_rows($conver) == 1){
-                                //fetch the converstaion id
-                                $fetch = mysqli_fetch_assoc($conver);
-                                $conversation_id = $fetch['id'];;
+                            $res=db::get_data($conver);
+                            if($res != 0)
+                            {
+                                $fetch=$res->fetch_assoc();
+                                $conversation_id = $fetch['id'];
+//                                var_dump($conversation_id);
                             }
-                            else{
-                                //they do not have a conversation
-                                //start a new converstaion and fetch its id
-                                $q = mysqli_query($con, "INSERT INTO `conversation` VALUES ('','$user_id',$user_two)");
-                                ///return the id inserted through auto-increment in last query
-                                $conversation_id = mysqli_insert_id($con);
+                            else
+                            {
+                                $qrry="INSERT INTO `conversation` VALUES ('','$user_id',$user_two)";
+                                $insert=db::insert_data($qrry);
+
+                                $last_id='SELECT MAX(id) FROM user';
+                                $con_id=db::get_data($last_id);
+                                $conversation_id=$con_id->fetch_assoc();
+//                                $conversation_id = db::connect()->insert_id();//getting last insert id of the conversation
                             }
-                        }else{
+                        }
+                        else
+                        {
                             die('Invalid $_GET ID.');
                         }
                     }else {
